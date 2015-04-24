@@ -59,6 +59,9 @@ void SysManager::notifyUpdate(uint32_t event){
 
 //------------------------------------------------------------------------------------
 void SysManager::run(){
+	while(_th == 0){
+		Thread::wait(100);
+	}
 	// attaches to topic updates 
 	MsgBroker::Exception e;
 	MsgBroker::attach("/gps", this, OnTopicUpdateCallback, &e);
@@ -74,20 +77,24 @@ void SysManager::run(){
 		osEvent oe = _th->signal_wait((GPS_EV_READY | KEY_EV_READY | ALARM_EV_READY | STAT_EV_READY), _timeout);
 		// if /alarm topic update
 		if(oe.status == osEventSignal && (oe.value.signals & ALARM_EV_READY) != 0){	
+			_th->signal_clr(ALARM_EV_READY);
 			beepStart(QUAD_SHOT, SHORT_TIME, REPEAT_FOREVER);
 		}
 		// if /keyb topic update, starts one short beep
 		if(oe.status == osEventSignal && (oe.value.signals & KEY_EV_READY) != 0){
+			_th->signal_clr(KEY_EV_READY);
 			MsgBroker::consumed("/keyb", &e);
 			beepStart(ONE_SHOT, SHORT_TIME, NO_REPEAT);
 		}
 		// if /gps topic update
 		if(oe.status == osEventSignal && (oe.value.signals & GPS_EV_READY) != 0){
+			_th->signal_clr(GPS_EV_READY);
 			MsgBroker::consumed("/gps", &e);
 			beepStart(DUAL_SHOT, SHORT_TIME, NO_REPEAT);
 		}
 		// if /stat topic update
 		if(oe.status == osEventSignal && (oe.value.signals & STAT_EV_READY) != 0){
+			_th->signal_clr(STAT_EV_READY);
 			Topic::StatusData_t * statdata = (Topic::StatusData_t *)MsgBroker::getTopicData("/stat", &e);
 			switch(statdata->mode){
 				case Topic::MODE_DISARMED:{

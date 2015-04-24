@@ -26,6 +26,8 @@
 GpsReader::GpsReader(osPriority prio, GpsReader::ModeEnum mode, Serial *serial) {
 	_mode = (uint32_t)mode;
 	_serial = serial;
+	_serial->baud(9600);
+	_th = 0;
 	_th = new Thread(&GpsReader::task, this, prio);
 }
 
@@ -51,15 +53,18 @@ void GpsReader::TxISRCallback(void){
 
 //------------------------------------------------------------------------------------
 void GpsReader::run(){
+	while(_th == 0){
+		Thread::wait(100);
+	}
 	// Attaches to installed serial peripheral
 	_serial->attach(this, &GpsReader::RxISRCallback, (SerialBase::IrqType)RxIrq);
 	_serial->attach(this, &GpsReader::TxISRCallback, (SerialBase::IrqType)TxIrq);
-	
 	
 	// Starts execution 
 	for(;;){
 		// Wait incoming data forever ... 
 		_th->signal_wait(GPS_EV_DATAREADY, osWaitForever);
+		_th->signal_clr(GPS_EV_DATAREADY);
 		while(_serial->readable()){
 			char data;
 			bool ready = false;

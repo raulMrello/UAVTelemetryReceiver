@@ -64,6 +64,8 @@ static void beepTimer(void const *handler){
 
 BeepGenerator::BeepGenerator(PwmOut *buzzer) {
 	_buzzer = buzzer;
+	_buzzer->period_us(250);
+	_buzzer->pulsewidth_us(0);
 	_status = STOPPED;
 	_tmr = new RtosTimer(beepTimer, osTimerPeriodic, this);
 }

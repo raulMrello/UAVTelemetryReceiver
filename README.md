@@ -15,7 +15,7 @@ This device has these main functions:
 
 ## Changelog
 
-> 23.04.2015-001 branch: master --------------
+> 24.04.2015-001 branch: master --------------
  - Project creation from UAVRemoteController project
  NEXT STEPS:
  - Modify Cubemx project to select new GPIO and provide a PDF pinout file

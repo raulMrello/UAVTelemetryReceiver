@@ -40,6 +40,7 @@ public:
 	
 	/** Constructor, destructor, getter and setter */
 	SysManager(	osPriority prio, DigitalOut *led, PwmOut *buzzer) : BeepGenerator(buzzer), LedFlasher(led) {
+		_th = 0;
 		_th = new Thread(&SysManager::task, this, prio);
 	}
 	

@@ -58,6 +58,8 @@ static void OnTopicUpdateCallback(void *subscriber, const char * topicname){
 
 VirtualReceiver::VirtualReceiver(osPriority prio, Serial *serial) {
 	_serial = serial;
+	_serial->baud(115200);
+	_th = 0;
 	_th = new Thread(&VirtualReceiver::task, this, prio);
 }
 
@@ -92,6 +94,9 @@ void VirtualReceiver::notifyUpdate(uint32_t event){
 
 //------------------------------------------------------------------------------------
 void VirtualReceiver::run(){
+	while(_th == 0){
+		Thread::wait(100);
+	}
 	// Attaches to serial peripheral
 	_serial->attach(this, &VirtualReceiver::RxISRCallback, (SerialBase::IrqType)RxIrq);
 	_serial->attach(this, &VirtualReceiver::TxISRCallback, (SerialBase::IrqType)TxIrq);
@@ -123,7 +128,8 @@ void VirtualReceiver::run(){
 				_protostat = STAT_WAIT_COMMAND;
 			}			
 		}
-		if(oe.status == osEventSignal && (oe.value.signals & VR_EV_DATAREADY) != 0){		
+		if(oe.status == osEventSignal && (oe.value.signals & VR_EV_DATAREADY) != 0){	
+			_th->signal_clr(VR_EV_DATAREADY);						
 			while(_serial->readable()){
 				uint8_t cmd;
 				// reads data and executes protocol state machine
@@ -154,6 +160,7 @@ void VirtualReceiver::run(){
 			}
 		}
 		if(oe.status == osEventSignal && (oe.value.signals & KEY_EV_READY) != 0){		
+			_th->signal_clr(KEY_EV_READY);						
 			Topic::KeyData_t * keydata = (Topic::KeyData_t *)MsgBroker::getTopicData("/keyb", &e);
 			memcpy(&_txpdu.data[1], keydata, sizeof(Topic::KeyData_t));
 			MsgBroker::consumed("/keyb", &e);
@@ -164,6 +171,7 @@ void VirtualReceiver::run(){
 			_protostat = STAT_WAIT_RESPONSE;
 		}
 		if(oe.status == osEventSignal && (oe.value.signals & GPS_EV_READY) != 0){	
+			_th->signal_clr(GPS_EV_READY);						
 			Topic::GpsData_t * gpsdata = (Topic::GpsData_t *)MsgBroker::getTopicData("/gps", &e);
 			memcpy(&_txpdu.data[1], gpsdata, sizeof(Topic::GpsData_t));
 			MsgBroker::consumed("/gps", &e);
